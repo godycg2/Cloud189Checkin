@@ -108,7 +108,7 @@
 1. 点击**Action**，再点击**I understand my workflows, go ahead and enable them**
 2. 给自己仓库点个 start 或者修改任意文件后提交一次或者手动点击运行
    ![](http://tu.yaohuo.me/imgs/2020/06/34ca160c972b9927.png)
-3. 每天早上 10:35 点执行任务
+3. 每天凌晨 01:00（北京时间）执行任务；签到失败时推送通知会 @全员
 
 ### 查看运行结果
 

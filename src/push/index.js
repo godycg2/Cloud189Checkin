@@ -61,15 +61,20 @@ const pushTelegramBot = (title, desp) => {
     });
 };
 
-const pushWecomBot = (title, desp) => {
-  if (!(wecomBot.key && wecomBot.telphone)) {
+const pushWecomBot = (title, desp, hasError) => {
+  if (!wecomBot.key) {
+    return;
+  }
+  // 签到正常时保持原有行为（@配置的手机号），未配置手机号则不推送；
+  // 签到失败时 @全员
+  if (!hasError && !wecomBot.telphone) {
     return;
   }
   const data = {
     msgtype: "text",
     text: {
       content: `${title}\n\n${desp}`,
-      mentioned_mobile_list: [wecomBot.telphone],
+      mentioned_mobile_list: hasError ? ["@all"] : [wecomBot.telphone],
     },
   };
   superagent
@@ -215,10 +220,10 @@ const pushShowDoc = (title, desp) => {
     });
 };
 
-const push = (title, desp) => {
+const push = (title, desp, hasError = false) => {
   pushServerChan(title, desp);
   pushTelegramBot(title, desp);
-  pushWecomBot(title, desp);
+  pushWecomBot(title, desp, hasError);
   pushWxPusher(title, desp);
   pushPlusPusher(title, desp);
   pushWPush(title, desp);

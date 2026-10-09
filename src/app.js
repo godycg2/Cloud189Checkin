@@ -39,6 +39,7 @@ const run = async (userName, password, userSizeInfoMap, logger) => {
         logger,
       });
       await Promise.all([doUserTask(cloudClient, logger)]);
+      return true;
     } catch (e) {
       if (e.response) {
         logger.log(`请求失败: ${e.response.statusCode}, ${e.response.body}`);
@@ -49,16 +50,20 @@ const run = async (userName, password, userSizeInfoMap, logger) => {
         logger.error("请求超时");
         throw e;
       }
+      return false;
     } finally {
       logger.log(
         `执行完毕, 耗时 ${((Date.now() - before) / 1000).toFixed(2)} 秒`
       );
     }
   }
+  return true;
 };
 
 // 开始执行程序
 async function main() {
+  //  是否存在签到失败的账号
+  let hasError = false;
   //  用于统计实际容量变化
   const userSizeInfoMap = new Map();
   for (let index = 0; index < accounts.length; index++) {
@@ -67,7 +72,10 @@ async function main() {
     const userNameInfo = mask(userName, 3, 7);
     const logger = log4js.getLogger(userName);
     logger.addContext("user", userNameInfo);
-    await run(userName, password, userSizeInfoMap, logger);
+    const success = await run(userName, password, userSizeInfoMap, logger);
+    if (!success) {
+      hasError = true;
+    }
   }
 
   //数据汇总
@@ -101,18 +109,25 @@ async function main() {
       ).toFixed(2)}G`
     );
   }
+
+  return hasError;
 }
 
 (async () => {
+  //  是否存在签到失败，失败时推送 @全员
+  let hasError = false;
   try {
-    await main();
+    hasError = await main();
     //等待日志文件写入
     await delay(1000);
+  } catch (e) {
+    hasError = true;
+    throw e;
   } finally {
     const logs = catLogs();
     const events = recording.replay();
     const content = events.map((e) => `${e.data.join("")}`).join("  \n");
-    push("天翼云盘自动签到任务", logs + content);
+    push("天翼云盘自动签到任务", logs + content, hasError);
     recording.erase();
     cleanLogs();
   }
